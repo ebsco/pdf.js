@@ -30,7 +30,7 @@ var PresentationModeState = {
 };
 
 var IGNORE_CURRENT_POSITION_ON_ZOOM = false;
-var DEFAULT_CACHE_SIZE = 10;
+var DEFAULT_CACHE_SIZE = 5;
 
 //#include pdf_rendering_queue.js
 //#include pdf_page_view.js
