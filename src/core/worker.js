@@ -236,6 +236,7 @@ var WorkerMessageHandler = PDFJS.WorkerMessageHandler = {
     });
 
     handler.on('GetDocRequest', function wphSetupDoc(data) {
+      PDFJS.documentID = data.documentID;
 
       var onSuccess = function(doc) {
         handler.send('GetDoc', { pdfInfo: doc });

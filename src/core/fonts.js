@@ -2632,7 +2632,7 @@ var Font = (function FontClosure() {
   Font.getFontID = (function () {
     var ID = 1;
     return function Font_getFontID() {
-      return String(ID++);
+      return PDFJS.documentID + "_" + String(ID++);
     };
   })();
 
