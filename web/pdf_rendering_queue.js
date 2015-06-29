@@ -17,7 +17,7 @@
 
 'use strict';
 
-var CLEANUP_TIMEOUT = 30000;
+var CLEANUP_TIMEOUT = 500;
 
 var RenderingStates = {
   INITIAL: 0,
