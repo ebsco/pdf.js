@@ -280,9 +280,10 @@ target.dist = function() {
   target.generic();
   target.singlefile();
   target.components();
+  target.minified();
 
   var DIST_DIR = BUILD_DIR + 'dist/';
-  var DIST_REPO_URL = 'https://github.com/mozilla/pdfjs-dist';
+  var DIST_REPO_URL = process.env['DIST_REPO_URL'] || 'https://github.com/mozilla/pdfjs-dist';
 
   cd(ROOT_DIR);
 
@@ -311,6 +312,11 @@ target.dist = function() {
   cp('-R', [
     COMPONENTS_DIR + '*',
   ], DIST_DIR + 'web/');
+
+  echo();
+  echo('### Adding minified files');
+  mkdir('-p', DIST_DIR + 'minified/');
+  cp('-R', MINIFIED_DIR + '/*', DIST_DIR + 'minified/');
 
   echo();
   echo('### Rebuilding manifests');
