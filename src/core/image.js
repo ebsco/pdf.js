@@ -17,7 +17,6 @@
 /* globals assert, ColorSpace, DecodeStream, error, info, isArray, ImageKind,
            isStream, JpegStream, JpxImage, Name, Promise, Stream, warn */
 
-'use strict';
 
 var PDFImage = (function PDFImageClosure() {
   /**

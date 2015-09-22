@@ -17,7 +17,6 @@
 /* globals assert, MissingDataException, isInt, NetworkManager, Promise,
            isEmptyObj, createPromiseCapability */
 
-'use strict';
 
 var ChunkedStream = (function ChunkedStreamClosure() {
   function ChunkedStream(length, chunkSize, manager) {

@@ -17,7 +17,6 @@
 /* globals Cmd, ColorSpace, Dict, MozBlobBuilder, Name, PDFJS, Ref, URL,
            Promise */
 
-'use strict';
 
 var globalScope = (typeof window === 'undefined') ? this : window;
 

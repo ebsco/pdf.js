@@ -19,7 +19,6 @@
            isValidUrl, OPS, createPromiseCapability, AnnotationType, 
            stringToUTF8String */
 
-'use strict';
 
 var DEFAULT_ICON_SIZE = 22; // px
 var SUPPORTED_TYPES = ['Link', 'Text', 'Widget'];

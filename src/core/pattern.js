@@ -18,7 +18,6 @@
            assert, isPDFFunction, UnsupportedManager, UNSUPPORTED_FEATURES,
            MissingDataException */
 
-'use strict';
 
 var PatternType = {
   FUNCTION_BASED: 1,

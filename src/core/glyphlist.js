@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 var GlyphsUnicode = {
   A: 0x0041,

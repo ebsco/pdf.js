@@ -20,7 +20,6 @@
            PDFJS, Promise, TextLayerBuilder, PDFRenderingQueue,
            AnnotationsLayerBuilder */
 
-'use strict';
 
 var PresentationModeState = {
   UNKNOWN: 0,

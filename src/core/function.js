@@ -17,7 +17,6 @@
 /* globals PostScriptLexer, PostScriptParser, error, info, isArray, isBool,
            isDict, isStream */
 
-'use strict';
 
 var PDFFunction = (function PDFFunctionClosure() {
   var CONSTRUCT_SAMPLED = 0;

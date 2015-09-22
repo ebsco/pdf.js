@@ -17,7 +17,6 @@
 /* globals bytesToString, ColorSpace, Dict, EOF, error, info, isArray,
            Jbig2Image, JpegImage, JpxImage, Lexer, PDFJS, shadow, Util, warn */
 
-'use strict';
 
 var Stream = (function StreamClosure() {
   function Stream(arrayBuffer, start, length, dict) {

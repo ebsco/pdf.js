@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 var bidi = PDFJS.bidi = (function bidiClosure() {
   // Character types for symbols from 0000 to 00FF.

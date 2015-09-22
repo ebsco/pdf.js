@@ -20,7 +20,6 @@
            isNum, Lexer, isArray, ISOAdobeCharset, ExpertCharset,
            ExpertSubsetCharset, Util, DingbatsGlyphsUnicode */
 
-'use strict';
 
 // Unicode Private Use Area
 var PRIVATE_USE_OFFSET_START = 0xE000;

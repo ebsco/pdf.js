@@ -17,7 +17,6 @@
 /* globals ArithmeticDecoder, error, log2, readInt8, readUint16, readUint32,
            shadow */
 
-'use strict';
 
 var Jbig2Image = (function Jbig2ImageClosure() {
   // Utility data structures

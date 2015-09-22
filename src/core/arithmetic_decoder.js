@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 /* This class implements the QM Coder decoding as defined in
  *   JPEG 2000 Part I Final Committee Draft Version 1.0

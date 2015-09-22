@@ -16,7 +16,6 @@
  */
 /* globals EOF, error, Lexer */
 
-'use strict';
 
 var PostScriptParser = (function PostScriptParserClosure() {
   function PostScriptParser(lexer) {
