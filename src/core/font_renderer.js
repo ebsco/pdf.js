@@ -17,7 +17,6 @@
 /* globals error, bytesToString, Stream, GlyphsUnicode, CFFParser, Encodings,
            Util */
 
-'use strict';
 
 var FontRendererFactory = (function FontRendererFactoryClosure() {
   function getLong(data, offset) {

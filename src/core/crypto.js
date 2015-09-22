@@ -18,7 +18,6 @@
            PasswordException, PasswordResponses, stringToBytes, warn,
            utf8StringToString */
 
-'use strict';
 
 var ARCFourCipher = (function ARCFourCipherClosure() {
   function ARCFourCipher(key) {

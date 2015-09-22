@@ -20,7 +20,6 @@
            NullStream, PredictorStream, Ref, RunLengthStream, warn, info,
            StreamType, MissingDataException, assert */
 
-'use strict';
 
 var EOF = {};
 

@@ -16,7 +16,6 @@
  */
 /* globals Promise */
 
-'use strict';
 
 var OverlayManager = {
   overlays: {},

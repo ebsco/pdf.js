@@ -15,7 +15,6 @@
  */
 /* globals URL, PDFJS */
 
-'use strict';
 
 var DownloadManager = (function DownloadManagerClosure() {
 

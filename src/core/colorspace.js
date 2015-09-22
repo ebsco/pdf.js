@@ -17,7 +17,6 @@
 /* globals error, info, isArray, isDict, isName, isStream, isString,
            PDFFunction, PDFImage, shadow, warn */
 
-'use strict';
 
 var ColorSpace = (function ColorSpaceClosure() {
   // Constructor should define this.numComps, this.defaultColor, this.name

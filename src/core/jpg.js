@@ -29,7 +29,6 @@ version was created by github user notmasteryet
  (partners.adobe.com/public/developer/en/ps/sdk/5116.DCT_Filter.pdf)
 */
 
-'use strict';
 
 var JpegImage = (function jpegImage() {
   var dctZigZag = new Uint8Array([

@@ -16,7 +16,6 @@
  */
 /*globals PDFJS, CustomStyle, mozL10n */
 
-'use strict';
 
 /**
  * @typedef {Object} AnnotationsLayerBuilderOptions

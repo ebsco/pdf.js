@@ -16,7 +16,6 @@
  */
 /* globals getFileName */
 
-'use strict';
 
 /**
  * @typedef {Object} PDFAttachmentViewOptions

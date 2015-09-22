@@ -17,7 +17,6 @@
 /* globals ArithmeticDecoder, globalScope, log2, readUint16, readUint32,
            info, warn */
 
-'use strict';
 
 var JpxImage = (function JpxImageClosure() {
   // Table E.1

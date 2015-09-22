@@ -25,7 +25,6 @@ if (typeof PDFJS === 'undefined') {
 }
 
 (function pdfViewerWrapper() {
-  'use strict';
 
 //#include ui_utils.js
 //#include pdf_link_service.js

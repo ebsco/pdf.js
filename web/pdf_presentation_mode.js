@@ -16,7 +16,6 @@
  */
 /* globals PDFViewerApplication */
 
-'use strict';
 
 var DELAY_BEFORE_RESETTING_SWITCH_IN_PROGRESS = 1500; // in ms
 var DELAY_BEFORE_HIDING_CONTROLS = 3000; // in ms

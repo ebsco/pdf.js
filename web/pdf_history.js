@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 var PDFHistory = (function () {
   function PDFHistory(options) {

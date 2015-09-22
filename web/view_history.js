@@ -16,7 +16,6 @@
  */
 /* globals PDFJS, VIEW_HISTORY_MEMORY, Promise */
 
-'use strict';
 
 /**
  * View History - This is a utility for saving various view parameters for

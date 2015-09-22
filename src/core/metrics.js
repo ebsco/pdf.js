@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 // The Metrics object contains glyph widths (in glyph space units).
 // As per PDF spec, for most fonts (Type 3 being an exception) a glyph

@@ -21,7 +21,6 @@
            Promise, MissingDataException, XRefParseException, Stream,
            ChunkedStream, createPromiseCapability */
 
-'use strict';
 
 var Name = (function NameClosure() {
   function Name(name) {

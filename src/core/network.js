@@ -18,7 +18,6 @@
 // NOTE: Be careful what goes in this file, as it is also used from the context
 // of the addon. So using warn/error in here will break the addon.
 
-'use strict';
 
 
 //#if (FIREFOX || MOZCENTRAL)

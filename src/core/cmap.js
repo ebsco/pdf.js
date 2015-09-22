@@ -17,7 +17,6 @@
 /* globals Util, isString, isInt, warn, error, isCmd, isEOF, isName, Lexer,
            isStream, StringStream, PDFJS, assert */
 
-'use strict';
 
 var BUILT_IN_CMAPS = [
 // << Start unicode maps.

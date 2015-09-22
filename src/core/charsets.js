@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 var ISOAdobeCharset = [
   '.notdef', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar',

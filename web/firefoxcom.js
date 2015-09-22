@@ -15,7 +15,6 @@
  */
 /* globals Preferences, PDFJS, Promise */
 
-'use strict';
 
 var FirefoxCom = (function FirefoxComClosure() {
   return {

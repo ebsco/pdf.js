@@ -21,7 +21,6 @@
  */
 /* globals Uint32ArrayView */
 
-'use strict';
 
 var MurmurHash3_64 = (function MurmurHash3_64Closure (seed) {
   // Workaround for missing math precison in JS.

@@ -16,7 +16,6 @@
  */
 /* globals mozL10n, RenderingStates, Promise, getOutputScale */
 
-'use strict';
 
 var THUMBNAIL_WIDTH = 98; // px
 var THUMBNAIL_CANVAS_BORDER_WIDTH = 1; // px

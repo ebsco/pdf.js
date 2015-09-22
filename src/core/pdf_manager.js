@@ -17,7 +17,6 @@
 /* globals NotImplementedException, MissingDataException, Promise, Stream,
            PDFDocument, ChunkedStreamManager, createPromiseCapability */
 
-'use strict';
 
 // The maximum number of bytes fetched per range request
 var RANGE_CHUNK_SIZE = 65536;

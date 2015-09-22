@@ -16,7 +16,6 @@
  */
 /* globals PDFViewerApplication, SCROLLBAR_PADDING */
 
-'use strict';
 
 var SecondaryToolbar = {
   opened: false,

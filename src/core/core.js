@@ -20,7 +20,6 @@
            isString, isName, info, Linearization, MissingDataException, Lexer,
            Catalog, stringToPDFString, stringToBytes, calculateMD5 */
 
-'use strict';
 
 var Page = (function PageClosure() {
 

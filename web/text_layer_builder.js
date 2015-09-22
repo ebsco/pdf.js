@@ -15,7 +15,6 @@
  */
 /* globals CustomStyle, PDFJS */
 
-'use strict';
 
 var MAX_TEXT_DIVS_TO_RENDER = 100000;
 

@@ -16,7 +16,6 @@
  */
 /* globals mozL10n, GrabToPan, Preferences, SecondaryToolbar */
 
-'use strict';
 
 //#include grab_to_pan.js
 var HandTool = {
