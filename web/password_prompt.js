@@ -16,7 +16,6 @@
  */
 /* globals PDFJS, mozL10n, OverlayManager */
 
-'use strict';
 
 var PasswordPrompt = {
   overlayName: null,

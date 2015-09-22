@@ -16,7 +16,6 @@
  */
 /* globals HTMLCanvasElement */
 
-'use strict';
 (function mozPrintCallbackPolyfillClosure() {
   if ('mozPrintCallback' in document.createElement('canvas')) {
     return;

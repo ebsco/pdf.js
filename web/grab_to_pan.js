@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 var GrabToPan = (function GrabToPanClosure() {
   /**

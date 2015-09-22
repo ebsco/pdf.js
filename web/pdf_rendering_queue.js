@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 var CLEANUP_TIMEOUT = 30000;
 

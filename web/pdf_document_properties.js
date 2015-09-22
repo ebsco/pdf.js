@@ -16,7 +16,6 @@
  */
 /* globals Promise, mozL10n, getPDFFileNameFromURL, OverlayManager */
 
-'use strict';
 
 /**
  * @typedef {Object} PDFDocumentPropertiesOptions

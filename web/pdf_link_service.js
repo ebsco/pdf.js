@@ -16,7 +16,6 @@
  */
 /* globals PDFViewer, PDFHistory, Promise, parseQueryString */
 
-'use strict';
 
 /**
  * Performs navigation functions inside PDF, such as opening specified page,

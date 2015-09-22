@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 //#if CHROME
 ////Note: Keep in sync with extensions/chromium/preferences_schema.json !

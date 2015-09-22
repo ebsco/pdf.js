@@ -15,7 +15,6 @@
  */
 
 /* globals chrome, PDFJS, PDFViewerApplication */
-'use strict';
 
 var ChromeCom = (function ChromeComClosure() {
   var ChromeCom = {};

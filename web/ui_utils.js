@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 var CSS_UNITS = 96.0 / 72.0;
 var DEFAULT_SCALE = 'auto';

@@ -17,7 +17,6 @@
 /* globals RenderingStates, PDFJS, CustomStyle, CSS_UNITS, getOutputScale,
            TextLayerBuilder, AnnotationsLayerBuilder, Promise */
 
-'use strict';
 
 var TEXT_LAYER_RENDER_DELAY = 200; // ms
 

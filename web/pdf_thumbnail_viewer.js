@@ -17,7 +17,6 @@
 /* globals watchScroll, getVisibleElements, scrollIntoView, PDFThumbnailView,
            Promise */
 
-'use strict';
 
 var THUMBNAIL_SCROLL_MARGIN = -19;
 

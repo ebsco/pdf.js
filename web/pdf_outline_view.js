@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-'use strict';
 
 /**
  * @typedef {Object} PDFOutlineViewOptions

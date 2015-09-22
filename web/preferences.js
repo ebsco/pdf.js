@@ -16,7 +16,6 @@
  */
 /* globals DEFAULT_PREFERENCES, Promise */
 
-'use strict';
 
 //#include default_preferences.js
 

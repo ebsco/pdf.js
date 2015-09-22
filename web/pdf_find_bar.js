@@ -15,7 +15,6 @@
  */
 /* globals FindStates, mozL10n */
 
-'use strict';
 
 /**
  * Creates a "search bar" given a set of DOM elements that act as controls

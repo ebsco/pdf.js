@@ -15,7 +15,6 @@
  */
 /* globals PDFJS, FirefoxCom, Promise, scrollIntoView */
 
-'use strict';
 
 var FindStates = {
   FIND_FOUND: 0,
