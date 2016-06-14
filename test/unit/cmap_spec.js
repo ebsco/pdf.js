@@ -1,5 +1,3 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* globals expect, it, describe, StringStream, CMapFactory, Name, CMap,
            IdentityCMap */
 
@@ -96,6 +94,7 @@ describe('cmap', function() {
     expect(cmap instanceof CMap).toEqual(true);
     expect(cmap.useCMap).not.toBeNull();
     expect(cmap.builtInCMap).toBeFalsy();
+    expect(cmap.length).toEqual(0x20A7);
     expect(cmap.isIdentityCMap).toEqual(false);
   });
   it('parses cmapname', function() {
@@ -116,6 +115,7 @@ describe('cmap', function() {
     expect(cmap instanceof CMap).toEqual(true);
     expect(cmap.useCMap).toBeNull();
     expect(cmap.builtInCMap).toBeTruthy();
+    expect(cmap.length).toEqual(0x20A7);
     expect(cmap.isIdentityCMap).toEqual(false);
   });
   it('loads built in identity cmap', function() {
@@ -123,6 +123,7 @@ describe('cmap', function() {
                                   { url: cMapUrl, packed: cMapPacked }, null);
     expect(cmap instanceof IdentityCMap).toEqual(true);
     expect(cmap.vertical).toEqual(false);
+    expect(cmap.length).toEqual(0x10000);
     expect(function() { return cmap.isIdentityCMap; }).toThrow(
       new Error('should not access .isIdentityCMap'));
   });

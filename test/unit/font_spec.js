@@ -1,7 +1,6 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* globals expect, it, describe, CFFCompiler, CFFParser, CFFIndex, CFFStrings,
-           SEAC_ANALYSIS_ENABLED:true, Type1Parser, StringStream */
+           SEAC_ANALYSIS_ENABLED, Type1Parser, StringStream,
+           _enableSeacAnalysis */
 
 'use strict';
 
@@ -102,7 +101,8 @@ describe('font', function() {
                                   14  // endchar
                                 ]);
       parser.bytes = bytes;
-      var charStrings = parser.parseCharStrings(0).charStrings;
+      var charStringsIndex = parser.parseIndex(0).obj;
+      var charStrings = parser.parseCharStrings(charStringsIndex).charStrings;
       expect(charStrings.count).toEqual(1);
       // shoudn't be sanitized
       expect(charStrings.get(0).length).toEqual(38);
@@ -111,13 +111,14 @@ describe('font', function() {
     it('parses a CharString endchar with 4 args w/seac enabled', function() {
       var seacAnalysisState = SEAC_ANALYSIS_ENABLED;
       try {
-        SEAC_ANALYSIS_ENABLED = true;
+        _enableSeacAnalysis(true);
         var bytes = new Uint8Array([0, 1, // count
                                     1,  // offsetSize
                                     0,  // offset[0]
                                     237, 247, 22, 247, 72, 204, 247, 86, 14]);
         parser.bytes = bytes;
-        var result = parser.parseCharStrings(0);
+        var charStringsIndex = parser.parseIndex(0).obj;
+        var result = parser.parseCharStrings(charStringsIndex);
         expect(result.charStrings.count).toEqual(1);
         expect(result.charStrings.get(0).length).toEqual(1);
         expect(result.seacs.length).toEqual(1);
@@ -127,25 +128,26 @@ describe('font', function() {
         expect(result.seacs[0][2]).toEqual(65);
         expect(result.seacs[0][3]).toEqual(194);
       } finally {
-        SEAC_ANALYSIS_ENABLED = seacAnalysisState;
+        _enableSeacAnalysis(seacAnalysisState);
       }
     });
 
     it('parses a CharString endchar with 4 args w/seac disabled', function() {
       var seacAnalysisState = SEAC_ANALYSIS_ENABLED;
       try {
-        SEAC_ANALYSIS_ENABLED = false;
+        _enableSeacAnalysis(false);
         var bytes = new Uint8Array([0, 1, // count
                                     1,  // offsetSize
                                     0,  // offset[0]
                                     237, 247, 22, 247, 72, 204, 247, 86, 14]);
         parser.bytes = bytes;
-        var result = parser.parseCharStrings(0);
+        var charStringsIndex = parser.parseIndex(0).obj;
+        var result = parser.parseCharStrings(charStringsIndex);
         expect(result.charStrings.count).toEqual(1);
         expect(result.charStrings.get(0).length).toEqual(9);
         expect(result.seacs.length).toEqual(0);
       } finally {
-        SEAC_ANALYSIS_ENABLED = seacAnalysisState;
+        _enableSeacAnalysis(seacAnalysisState);
       }
     });
 
@@ -155,7 +157,8 @@ describe('font', function() {
                                   0,  // offset[0]
                                   14]);
       parser.bytes = bytes;
-      var result = parser.parseCharStrings(0);
+      var charStringsIndex = parser.parseIndex(0).obj;
+      var result = parser.parseCharStrings(charStringsIndex);
       expect(result.charStrings.count).toEqual(1);
       expect(result.charStrings.get(0)[0]).toEqual(14);
       expect(result.seacs.length).toEqual(0);

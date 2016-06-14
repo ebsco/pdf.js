@@ -14,8 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Adobe CMap resources are covered by their own copyright and license:
-http://sourceforge.net/adobe/cmap/wiki/License/
+Adobe CMap resources are covered by their own copyright but the same license:
+
+    Copyright 1990-2015 Adobe Systems Incorporated.
+
+See https://github.com/adobe-type-tools/cmap-resources
 -->
 <html dir="ltr" mozdisallowselectionprint moznomarginboxes>
   <head>
@@ -23,6 +26,9 @@ http://sourceforge.net/adobe/cmap/wiki/License/
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <!--#if GENERIC || CHROME-->
     <meta name="google" content="notranslate">
+<!--#endif-->
+<!--#if GENERIC-->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <!--#endif-->
     <title>PDF.js viewer</title>
 
@@ -47,15 +53,7 @@ http://sourceforge.net/adobe/cmap/wiki/License/
 <!--#endif-->
 
 <!--#if !PRODUCTION-->
-    <script src="../src/shared/util.js"></script>
-    <script src="../src/display/api.js"></script>
-    <script src="../src/display/metadata.js"></script>
-    <script src="../src/display/canvas.js"></script>
-    <script src="../src/display/webgl.js"></script>
-    <script src="../src/display/pattern_helper.js"></script>
-    <script src="../src/display/font_loader.js"></script>
-    <script src="../src/display/annotation_helper.js"></script>
-    <script>PDFJS.workerSrc = '../src/worker_loader.js';</script>
+    <script src="../node_modules/requirejs/require.js"></script>
 <!--#endif-->
 
 <!--#if (GENERIC && !MINIFIED) -->
@@ -68,10 +66,11 @@ http://sourceforge.net/adobe/cmap/wiki/License/
     <script src="preferences.js"></script>
     <script src="download_manager.js"></script>
     <script src="view_history.js"></script>
+    <script src="pdf_link_service.js"></script>
     <script src="pdf_rendering_queue.js"></script>
     <script src="pdf_page_view.js"></script>
     <script src="text_layer_builder.js"></script>
-    <script src="annotations_layer_builder.js"></script>
+    <script src="annotation_layer_builder.js"></script>
     <script src="pdf_viewer.js"></script>
     <script src="pdf_thumbnail_view.js"></script>
     <script src="pdf_thumbnail_viewer.js"></script>
@@ -138,10 +137,11 @@ http://sourceforge.net/adobe/cmap/wiki/License/
               <span data-l10n-id="find_next_label">Next</span>
             </button>
           </div>
-          <input type="checkbox" id="findHighlightAll" class="toolbarField">
-          <label for="findHighlightAll" class="toolbarLabel" tabindex="94" data-l10n-id="find_highlight">Highlight all</label>
-          <input type="checkbox" id="findMatchCase" class="toolbarField">
-          <label for="findMatchCase" class="toolbarLabel" tabindex="95" data-l10n-id="find_match_case_label">Match case</label>
+          <input type="checkbox" id="findHighlightAll" class="toolbarField" tabindex="94">
+          <label for="findHighlightAll" class="toolbarLabel" data-l10n-id="find_highlight">Highlight all</label>
+          <input type="checkbox" id="findMatchCase" class="toolbarField" tabindex="95">
+          <label for="findMatchCase" class="toolbarLabel" data-l10n-id="find_match_case_label">Match case</label>
+          <span id="findResultsCount" class="toolbarLabel hidden"></span>
           <span id="findMsg" class="toolbarLabel"></span>
         </div>  <!-- findbar -->
 
@@ -331,7 +331,8 @@ http://sourceforge.net/adobe/cmap/wiki/License/
               <p id="passwordText" data-l10n-id="password_label">Enter the password to open this PDF file:</p>
             </div>
             <div class="row">
-              <input type="password" id="password" class="toolbarField" />
+              <!-- The type="password" attribute is set via script, to prevent warnings in Firefox for all http:// documents. -->
+              <input id="password" class="toolbarField" />
             </div>
             <div class="buttonRow">
               <button id="passwordCancel" class="overlayButton"><span data-l10n-id="password_cancel">Cancel</span></button>
@@ -384,6 +385,9 @@ http://sourceforge.net/adobe/cmap/wiki/License/
             </div>
           </div>
         </div>
+<!--#if CHROME-->
+<!--#include viewer-snippet-chrome-overlays.html-->
+<!--#endif-->
       </div>  <!-- overlayContainer -->
 
     </div> <!-- outerContainer -->

@@ -1,5 +1,3 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,7 +60,9 @@ var ROOT_DIR = __dirname + '/', // absolute path to project's root
     MOZCENTRAL_PREF_PREFIX = 'pdfjs',
     FIREFOX_PREF_PREFIX = 'extensions.uriloader@pdf.js',
     MOZCENTRAL_STREAM_CONVERTER_ID = 'd0c5195d-e798-49d4-b1d3-9324328b2291',
-    FIREFOX_STREAM_CONVERTER_ID = '6457a96b-2d68-439a-bcfa-44465fbcdbb1';
+    FIREFOX_STREAM_CONVERTER_ID = '6457a96b-2d68-439a-bcfa-44465fbcdbb1',
+    MOZCENTRAL_STREAM_CONVERTER2_ID = 'd0c5195d-e798-49d4-b1d3-9324328b2292',
+    FIREFOX_STREAM_CONVERTER2_ID = '6457a96b-2d68-439a-bcfa-44465fbcdbb2';
 
 var DEFINES = {
   PRODUCTION: true,
@@ -70,7 +70,6 @@ var DEFINES = {
   GENERIC: false,
   FIREFOX: false,
   MOZCENTRAL: false,
-  B2G: false,
   CHROME: false,
   MINIFIED: false,
   SINGLE_FILE: false,
@@ -106,8 +105,7 @@ var COMMON_WEB_FILES =
     COMMON_FIREFOX_FILES_PREPROCESS =
       [FIREFOX_CONTENT_DIR + 'PdfStreamConverter.jsm',
        FIREFOX_CONTENT_DIR + 'PdfjsContentUtils.jsm',
-       FIREFOX_CONTENT_DIR + 'PdfjsChromeUtils.jsm',
-       FIREFOX_CONTENT_DIR + 'PdfRedirector.jsm'];
+       FIREFOX_CONTENT_DIR + 'PdfjsChromeUtils.jsm'];
 //
 // make generic
 // Builds the generic production viewer that should be compatible with most
@@ -151,6 +149,7 @@ target.generic = function() {
   };
   builder.build(setup);
 
+  cleanupJSSource(GENERIC_DIR + '/build/pdf.js');
   cleanupJSSource(GENERIC_DIR + '/web/viewer.js');
   cleanupCSSSource(GENERIC_DIR + '/web/viewer.css');
 };
@@ -199,7 +198,8 @@ target.jsdoc = function() {
   var JSDOC_FILES = [
     'src/doc_helper.js',
     'src/display/api.js',
-    'src/shared/util.js'
+    'src/shared/util.js',
+    'src/core/annotation.js'
   ];
 
   if (test('-d', JSDOC_DIR)) {
@@ -264,11 +264,13 @@ target.web = function() {
         GH_PAGES_DIR + '/getting_started/index.html');
     echo('Done building with wintersmith.');
 
+    var reason = process.env['PDFJS_UPDATE_REASON'];
     cd(GH_PAGES_DIR);
     exec('git init');
     exec('git remote add origin ' + REPO);
     exec('git add -A');
-    exec('git commit -am "gh-pages site created via make.js script"');
+    exec('git commit -am "gh-pages site created via make.js script" -m ' +
+         '"PDF.js version ' + VERSION + (reason ? ' - ' + reason : '') + '"');
     exec('git branch -m gh-pages');
 
     echo();
@@ -280,10 +282,9 @@ target.dist = function() {
   target.generic();
   target.singlefile();
   target.components();
-  target.minified();
 
   var DIST_DIR = BUILD_DIR + 'dist/';
-  var DIST_REPO_URL = process.env['DIST_REPO_URL'] || 'https://github.com/mozilla/pdfjs-dist';
+  var DIST_REPO_URL = 'https://github.com/mozilla/pdfjs-dist';
 
   cd(ROOT_DIR);
 
@@ -314,11 +315,6 @@ target.dist = function() {
   ], DIST_DIR + 'web/');
 
   echo();
-  echo('### Adding minified files');
-  mkdir('-p', DIST_DIR + 'minified/');
-  cp('-R', MINIFIED_DIR + '/*', DIST_DIR + 'minified/');
-
-  echo();
   echo('### Rebuilding manifests');
 
   var DIST_NAME = 'pdfjs-dist';
@@ -330,6 +326,7 @@ target.dist = function() {
   var npmManifest = {
     name: DIST_NAME,
     version: VERSION,
+    main: 'build/pdf.js',
     description: DIST_DESCRIPTION,
     keywords: DIST_KEYWORDS,
     homepage: DIST_HOMEPAGE,
@@ -359,7 +356,8 @@ target.dist = function() {
   echo('### Commiting changes');
 
   cd(DIST_DIR);
-  var message = 'PDF.js version ' + VERSION;
+  var reason = process.env['PDFJS_UPDATE_REASON'];
+  var message = 'PDF.js version ' + VERSION + (reason ? ' - ' + reason : '');
   exec('git add *');
   exec('git commit -am \"' + message + '\"');
   exec('git tag -a v' + VERSION + ' -m \"' + message + '\"');
@@ -450,7 +448,7 @@ target.locale = function() {
 // Compresses cmap files. Ensure that Adobe cmap download and uncompressed at
 // ./external/cmaps location.
 //
-target.cmaps = function (args) {
+target.cmaps = function () {
   var CMAP_INPUT = 'external/cmaps';
   var VIEWER_CMAP_OUTPUT = 'external/bcmaps';
 
@@ -461,7 +459,7 @@ target.cmaps = function (args) {
   // testing a file that usually present
   if (!test('-f', CMAP_INPUT + '/UniJIS-UCS2-H')) {
     echo('./external/cmaps has no cmap files, please download them from:');
-    echo('  http://sourceforge.net/adobe/cmap/wiki/Home/');
+    echo('  https://github.com/adobe-type-tools/cmap-resources');
     exit(1);
   }
 
@@ -479,93 +477,98 @@ target.cmaps = function (args) {
 target.bundle = function(args) {
   args = args || {};
   var defines = args.defines || DEFINES;
-  var excludes = args.excludes || [];
 
   target.buildnumber();
 
   cd(ROOT_DIR);
   echo();
   echo('### Bundling files into ' + BUILD_TARGET);
-  var reg = /\n\/\* -\*- Mode(.|\n)*?Mozilla Foundation(.|\n)*?'use strict';/g;
 
-  function bundle(filename, dir, SRC_FILES, EXT_SRC_FILES) {
-    var out = '',
-        lineFilter = function (line) {
-          out += line.replace(/'use strict';/g, "") + '\n';
-        };
-    for (var i = 0, length = excludes.length; i < length; ++i) {
-      var exclude = excludes[i];
-      var index = SRC_FILES.indexOf(exclude);
-      if (index >= 0) {
-        SRC_FILES.splice(index, 1);
-      }
-    }
-
-    var bundleContent = cat(SRC_FILES),
+  function bundle(filename, outfilename, files, distname, isMainFile) {
+    var bundleContent = cat(files),
         bundleVersion = VERSION,
         bundleBuild = exec('git log --format="%h" -n 1',
           {silent: true}).output.replace('\n', '');
 
-    crlfchecker.checkIfCrlfIsPresent(SRC_FILES);
+    crlfchecker.checkIfCrlfIsPresent(files);
 
-    // Strip out all the vim/license headers.
-    bundleContent = bundleContent.replace(reg, '');
+    // Prepend a newline because stripCommentHeaders only strips comments that
+    // follow a line feed. The file where bundleContent is inserted already
+    // contains a license header, so the header of bundleContent can be removed.
+    bundleContent = stripCommentHeaders('\n' + bundleContent);
 
-    // Append external files last since we don't want to modify them.
-    bundleContent += cat(EXT_SRC_FILES);
+    // Removes AMD and CommonJS branches from UMD headers.
+    bundleContent = stripUMDHeaders(bundleContent);
 
+    var amdName = 'pdfjs-dist/build/' + distname.replace(/\.js$/, '');
+    var jsName = amdName.replace(/[\-_\.\/]\w/g, function (all) {
+      return all[1].toUpperCase();
+    });
     // This just preprocesses the empty pdf.js file, we don't actually want to
     // preprocess everything yet since other build targets use this file.
-    builder.preprocess(filename, lineFilter, builder.merge(defines,
+    builder.preprocess(filename, outfilename, builder.merge(defines,
                            {BUNDLE: bundleContent,
                             BUNDLE_VERSION: bundleVersion,
-                            BUNDLE_BUILD: bundleBuild}));
-
-    fs.writeFileSync(dir, out);
+                            BUNDLE_BUILD: bundleBuild,
+                            BUNDLE_AMD_NAME: amdName,
+                            BUNDLE_JS_NAME: jsName,
+                            MAIN_FILE: isMainFile}));
   }
 
   if (!test('-d', BUILD_DIR)) {
     mkdir(BUILD_DIR);
   }
 
-  var SHARED_SRC_FILES = [
-    'shared/util.js',
+  var umd = require('./external/umdutils/verifier.js');
+  var MAIN_SRC_FILES = [
+    SRC_DIR + 'display/annotation_layer.js',
+    SRC_DIR + 'display/text_layer.js',
+    SRC_DIR + 'display/api.js'
   ];
 
-  var MAIN_SRC_FILES = SHARED_SRC_FILES.concat([
-    'display/api.js',
-    'display/metadata.js',
-    'display/canvas.js',
-    'display/webgl.js',
-    'display/pattern_helper.js',
-    'display/font_loader.js',
-    'display/annotation_helper.js',
-    'display/svg.js'
-  ]);
+  var WORKER_SRC_FILES = [
+    SRC_DIR + 'core/worker.js'
+  ];
 
-  var srcFiles = builder.getWorkerSrcFiles('src/worker_loader.js');
-  var WORKER_SRC_FILES = srcFiles.srcFiles;
+  var mainFileName = 'pdf.js';
+  var workerFileName = 'pdf.worker.js';
 
-  if (!defines.SINGLE_FILE) {
-    // We want shared_src_files in both pdf.js and pdf.worker.js
-    // unless it's being built in singlefile mode.
-    WORKER_SRC_FILES = SHARED_SRC_FILES.concat(WORKER_SRC_FILES);
-  } else {
-    // In singlefile mode, all of the src files will be bundled into
-    // the main pdf.js outuput.
-    MAIN_SRC_FILES = MAIN_SRC_FILES.concat(WORKER_SRC_FILES);
+  // Extension does not need svg.js and network.js files.
+  if (!defines.FIREFOX && !defines.MOZCENTRAL) {
+    MAIN_SRC_FILES.push(SRC_DIR + 'display/svg.js');
+    WORKER_SRC_FILES.push(SRC_DIR + 'core/network.js');
   }
 
-  var EXT_SRC_FILES = srcFiles.externalSrcFiles;
+  if (defines.SINGLE_FILE) {
+    // In singlefile mode, all of the src files will be bundled into
+    // the main pdf.js output.
+    MAIN_SRC_FILES = MAIN_SRC_FILES.concat(WORKER_SRC_FILES);
+    WORKER_SRC_FILES = null; // no need for worker file
+    mainFileName = 'pdf.combined.js';
+    workerFileName = null;
+  }
+
+  // Reading UMD headers and building loading orders of modules. The
+  // readDependencies returns AMD module names: removing 'pdfjs' prefix and
+  // adding '.js' extensions to the name.
+  var mainFiles = umd.readDependencies(MAIN_SRC_FILES).loadOrder.map(
+    function (name) { return name.replace('pdfjs/', '') + '.js'; });
+
+  var workerFiles = WORKER_SRC_FILES &&
+                    umd.readDependencies(WORKER_SRC_FILES).loadOrder.map(
+    function (name) { return name.replace('pdfjs/', '') + '.js'; });
 
   cd(SRC_DIR);
 
-  bundle('pdf.js', ROOT_DIR + BUILD_TARGET, MAIN_SRC_FILES, []);
-  var srcCopy = ROOT_DIR + BUILD_DIR + 'pdf.worker.js.temp';
-  cp('pdf.js', srcCopy);
-  bundle(srcCopy, ROOT_DIR + BUILD_WORKER_TARGET, WORKER_SRC_FILES,
-         EXT_SRC_FILES);
-  rm(srcCopy);
+  bundle('pdf.js', ROOT_DIR + BUILD_TARGET, mainFiles, mainFileName, true);
+
+  if (workerFiles) {
+    var srcCopy = ROOT_DIR + BUILD_DIR + 'pdf.worker.js.temp';
+    cp('pdf.js', srcCopy);
+    bundle(srcCopy, ROOT_DIR + BUILD_WORKER_TARGET, workerFiles,
+           workerFileName, false);
+    rm(srcCopy);
+  }
 };
 
 //
@@ -610,12 +613,28 @@ target.singlefile = function() {
 
 };
 
+function stripCommentHeaders(content) {
+  var notEndOfComment = '(?:[^*]|\\*(?!/))+';
+  var reg = new RegExp(
+    '\n/\\* Copyright' + notEndOfComment + '\\*/\\s*' +
+    '(?:/\\*' + notEndOfComment + '\\*/\\s*|//(?!#).*\n\\s*)*' +
+    '\\s*\'use strict\';', 'g');
+  content = content.replace(reg, '');
+  return content;
+}
+
+function stripUMDHeaders(content) {
+  var reg = new RegExp(
+    'if \\(typeof define === \'function\' && define.amd\\) \\{[^}]*' +
+    '\\} else if \\(typeof exports !== \'undefined\'\\) \\{[^}]*' +
+    '\\} else ', 'g');
+  return content.replace(reg, '');
+}
+
 function cleanupJSSource(file) {
   var content = cat(file);
 
-  // Strip out all the vim/license headers.
-  var reg = /\n\/\* -\*- Mode(.|\n)*?Mozilla Foundation(.|\n)*?'use strict';/g;
-  content = content.replace(reg, '');
+  content = stripCommentHeaders(content);
 
   content.to(file);
 }
@@ -781,7 +800,7 @@ target.firefox = function() {
       FIREFOX_AMO_EXTENSION_NAME = 'pdf.js.amo.xpi';
 
   target.locale();
-  target.bundle({ excludes: ['core/network.js'], defines: defines });
+  target.bundle({ defines: defines });
   cd(ROOT_DIR);
 
   // Clear out everything in the firefox extension build directory
@@ -845,6 +864,8 @@ target.firefox = function() {
 
   sed('-i', /PDFJSSCRIPT_STREAM_CONVERTER_ID/, FIREFOX_STREAM_CONVERTER_ID,
       FIREFOX_BUILD_CONTENT_DIR + 'PdfStreamConverter.jsm');
+  sed('-i', /PDFJSSCRIPT_STREAM_CONVERTER2_ID/, FIREFOX_STREAM_CONVERTER2_ID,
+      FIREFOX_BUILD_CONTENT_DIR + 'PdfStreamConverter.jsm');
   sed('-i', /PDFJSSCRIPT_PREF_PREFIX/, FIREFOX_PREF_PREFIX,
       FIREFOX_BUILD_CONTENT_DIR + 'PdfStreamConverter.jsm');
   sed('-i', /PDFJSSCRIPT_MOZ_CENTRAL/, 'false',
@@ -859,6 +880,9 @@ target.firefox = function() {
   var chromeManifest = cat(EXTENSION_SRC_DIR + '/firefox/chrome.manifest.inc');
   sed('-i', /.*PDFJS_SUPPORTED_LOCALES.*\n/, chromeManifest,
       FIREFOX_BUILD_DIR + '/chrome.manifest');
+
+  // Set timezone to UTC before calling zip to get reproducible results.
+  process.env.TZ = 'UTC';
 
   // Create the xpi
   cd(FIREFOX_BUILD_DIR);
@@ -889,7 +913,6 @@ target.mozcentral = function() {
       MOZCENTRAL_EXTENSION_DIR = MOZCENTRAL_DIR + 'browser/extensions/pdfjs/',
       MOZCENTRAL_CONTENT_DIR = MOZCENTRAL_EXTENSION_DIR + 'content/',
       MOZCENTRAL_L10N_DIR = MOZCENTRAL_DIR + 'browser/locales/en-US/pdfviewer/',
-      MOZCENTRAL_TEST_DIR = MOZCENTRAL_EXTENSION_DIR + 'test/',
       FIREFOX_CONTENT_DIR = EXTENSION_SRC_DIR + '/firefox/content/',
       FIREFOX_EXTENSION_FILES_TO_COPY =
         ['*.svg',
@@ -904,7 +927,7 @@ target.mozcentral = function() {
         ['icon.png',
          'icon64.png'];
 
-  target.bundle({ excludes: ['core/network.js'], defines: defines });
+  target.bundle({ defines: defines });
   cd(ROOT_DIR);
 
   // Clear out everything in the firefox extension build directory
@@ -978,49 +1001,56 @@ target.mozcentral = function() {
 
   sed('-i', /PDFJSSCRIPT_STREAM_CONVERTER_ID/, MOZCENTRAL_STREAM_CONVERTER_ID,
       MOZCENTRAL_CONTENT_DIR + 'PdfStreamConverter.jsm');
+  sed('-i', /PDFJSSCRIPT_STREAM_CONVERTER2_ID/, MOZCENTRAL_STREAM_CONVERTER2_ID,
+      MOZCENTRAL_CONTENT_DIR + 'PdfStreamConverter.jsm');
   sed('-i', /PDFJSSCRIPT_PREF_PREFIX/, MOZCENTRAL_PREF_PREFIX,
       MOZCENTRAL_CONTENT_DIR + 'PdfStreamConverter.jsm');
   sed('-i', /PDFJSSCRIPT_MOZ_CENTRAL/, 'true',
       MOZCENTRAL_CONTENT_DIR + 'PdfStreamConverter.jsm');
   sed('-i', /PDFJSSCRIPT_PREF_PREFIX/, MOZCENTRAL_PREF_PREFIX,
       MOZCENTRAL_CONTENT_DIR + 'PdfjsChromeUtils.jsm');
-
-  // Copy test files
-  mkdir('-p', MOZCENTRAL_TEST_DIR);
-  cp('-Rf', 'test/mozcentral/*', MOZCENTRAL_TEST_DIR);
 };
 
 target.b2g = function() {
-  target.locale();
+  target.generic();
+  target.components();
 
   echo();
   echo('### Building B2G (Firefox OS App)');
   var B2G_BUILD_CONTENT_DIR = B2G_BUILD_DIR + '/content/';
-  var defines = builder.merge(DEFINES, { B2G: true });
-  target.bundle({ defines: defines });
+  target.bundle();
 
   // Clear out everything in the b2g build directory
   cd(ROOT_DIR);
   rm('-Rf', B2G_BUILD_DIR);
   mkdir('-p', B2G_BUILD_CONTENT_DIR);
-  mkdir('-p', B2G_BUILD_CONTENT_DIR + BUILD_DIR);
   mkdir('-p', B2G_BUILD_CONTENT_DIR + '/web');
-  mkdir('-p', B2G_BUILD_CONTENT_DIR + '/web/cmaps');
+  // Simulating pdfjs-dist structure in the pdfjs-components folder.
+  mkdir('-p', B2G_BUILD_CONTENT_DIR + '/pdfjs-components/web');
+  mkdir('-p', B2G_BUILD_CONTENT_DIR + '/pdfjs-components/build');
+  mkdir('-p', B2G_BUILD_CONTENT_DIR + '/pdfjs-components/cmaps');
 
   var setup = {
-    defines: defines,
+    defines: DEFINES,
     copy: [
       ['extensions/b2g/images', B2G_BUILD_CONTENT_DIR + '/web'],
       ['extensions/b2g/viewer.html', B2G_BUILD_CONTENT_DIR + '/web'],
       ['extensions/b2g/viewer.css', B2G_BUILD_CONTENT_DIR + '/web'],
+      ['extensions/b2g/viewer.js', B2G_BUILD_CONTENT_DIR + '/web'],
       ['web/locale', B2G_BUILD_CONTENT_DIR + '/web'],
-      ['external/bcmaps/*', B2G_BUILD_CONTENT_DIR + '/web/cmaps'],
-      ['external/webL10n/l10n.js', B2G_BUILD_CONTENT_DIR + '/web']
+      ['build/generic/build/pdf.js',
+        B2G_BUILD_CONTENT_DIR + '/pdfjs-components/build'],
+      ['build/generic/build/pdf.worker.js',
+        B2G_BUILD_CONTENT_DIR + '/pdfjs-components/build'],
+      ['build/components/pdf_viewer.js',
+        B2G_BUILD_CONTENT_DIR + '/pdfjs-components/web'],
+      ['build/components/pdf_viewer.css',
+        B2G_BUILD_CONTENT_DIR + '/pdfjs-components/web'],
+      ['build/components/images',
+        B2G_BUILD_CONTENT_DIR + '/pdfjs-components/web'],
+      ['external/bcmaps/*', B2G_BUILD_CONTENT_DIR + '/pdfjs-components/cmaps']
     ],
-    preprocess: [
-      ['web/viewer.js', B2G_BUILD_CONTENT_DIR + '/web'],
-      [BUILD_TARGETS, B2G_BUILD_CONTENT_DIR + BUILD_DIR]
-    ]
+    preprocess: []
   };
   builder.build(setup);
 
@@ -1271,8 +1301,7 @@ target.botmakeref = function() {
   echo();
   echo('### Creating reference images');
 
-  var PDF_TEST = env['PDF_TEST'] || 'test_manifest.json',
-      PDF_BROWSERS = env['PDF_BROWSERS'] ||
+  var PDF_BROWSERS = env['PDF_BROWSERS'] ||
                      'resources/browser_manifests/browser_manifest.json';
 
   if (!test('-f', 'test/' + PDF_BROWSERS)) {
@@ -1480,9 +1509,18 @@ target.lint = function() {
   var options = '--extra-ext .jsm';
 
   var exitCode = exec('"' + jshintPath + '" ' + options + ' .').code;
-  if (exitCode === 0) {
-    echo('files checked, no errors found');
+  if (exitCode !== 0) {
+    exit(1);
   }
+
+  echo();
+  echo('### Checking UMD dependencies');
+  var umd = require('./external/umdutils/verifier.js');
+  if (!umd.validateFiles({'pdfjs': './src'})) {
+    exit(1);
+  }
+
+  echo('files checked, no errors found');
 };
 
 //

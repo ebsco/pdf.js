@@ -1,5 +1,3 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +12,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals Util, isString, isInt, warn, error, isCmd, isEOF, isName, Lexer,
-           isStream, StringStream, PDFJS, assert */
+/* globals PDFJS */
 
 'use strict';
+
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define('pdfjs/core/cmap', ['exports', 'pdfjs/shared/util',
+      'pdfjs/core/primitives', 'pdfjs/core/stream', 'pdfjs/core/parser'],
+      factory);
+  } else if (typeof exports !== 'undefined') {
+    factory(exports, require('../shared/util.js'), require('./primitives.js'),
+      require('./stream.js'), require('./parser.js'));
+  } else {
+    factory((root.pdfjsCoreCMap = {}), root.pdfjsSharedUtil,
+      root.pdfjsCorePrimitives, root.pdfjsCoreStream, root.pdfjsCoreParser);
+  }
+}(this, function (exports, sharedUtil, corePrimitives, coreStream, coreParser) {
+
+var Util = sharedUtil.Util;
+var assert = sharedUtil.assert;
+var error = sharedUtil.error;
+var isInt = sharedUtil.isInt;
+var isString = sharedUtil.isString;
+var warn = sharedUtil.warn;
+var isName = corePrimitives.isName;
+var isCmd = corePrimitives.isCmd;
+var isStream = corePrimitives.isStream;
+var StringStream = coreStream.StringStream;
+var Lexer = coreParser.Lexer;
+var isEOF = coreParser.isEOF;
 
 var BUILT_IN_CMAPS = [
 // << Start unicode maps.
@@ -306,6 +330,10 @@ var CMap = (function CMapClosure() {
       out.length = 1;
     },
 
+    get length() {
+      return this._map.length;
+    },
+
     get isIdentityCMap() {
       if (!(this.name === 'Identity-H' || this.name === 'Identity-V')) {
         return false;
@@ -381,6 +409,10 @@ var IdentityCMap = (function IdentityCMapClosure() {
     },
 
     readCharCode: CMap.prototype.readCharCode,
+
+    get length() {
+      return 0x10000;
+    },
 
     get isIdentityCMap() {
       error('should not access .isIdentityCMap');
@@ -986,3 +1018,8 @@ var CMapFactory = (function CMapFactoryClosure() {
     }
   };
 })();
+
+exports.CMap = CMap;
+exports.CMapFactory = CMapFactory;
+exports.IdentityCMap = IdentityCMap;
+}));
