@@ -485,6 +485,11 @@ target.bundle = function(args) {
   echo('### Bundling files into ' + BUILD_TARGET);
 
   function bundle(filename, outfilename, files, distname, isMainFile) {
+    var out = '',
+      lineFilter = function (line) {
+        out += line.replace(/['"]use strict['"];/g, "") + '\n';
+      };
+
     var bundleContent = cat(files),
         bundleVersion = VERSION,
         bundleBuild = exec('git log --format="%h" -n 1',
@@ -506,13 +511,15 @@ target.bundle = function(args) {
     });
     // This just preprocesses the empty pdf.js file, we don't actually want to
     // preprocess everything yet since other build targets use this file.
-    builder.preprocess(filename, outfilename, builder.merge(defines,
+    builder.preprocess(filename, lineFilter, builder.merge(defines,
                            {BUNDLE: bundleContent,
                             BUNDLE_VERSION: bundleVersion,
                             BUNDLE_BUILD: bundleBuild,
                             BUNDLE_AMD_NAME: amdName,
                             BUNDLE_JS_NAME: jsName,
                             MAIN_FILE: isMainFile}));
+
+    fs.writeFileSync(outfilename, out);
   }
 
   if (!test('-d', BUILD_DIR)) {
@@ -623,6 +630,11 @@ function stripCommentHeaders(content) {
   return content;
 }
 
+function stripUseStrict(content) {
+  var reg = new RegExp('[\'"]use strict[\'"];', 'g');
+  return content.replace(reg, '');
+}
+
 function stripUMDHeaders(content) {
   var reg = new RegExp(
     'if \\(typeof define === \'function\' && define.amd\\) \\{[^}]*' +
@@ -635,6 +647,7 @@ function cleanupJSSource(file) {
   var content = cat(file);
 
   content = stripCommentHeaders(content);
+  content = stripUseStrict(content);
 
   content.to(file);
 }
@@ -696,6 +709,8 @@ target.minified = function() {
   builder.build(setup);
 
   cleanupCSSSource(MINIFIED_DIR + '/web/viewer.css');
+  cleanupJSSource(MINIFIED_DIR + '/build/pdf.js');
+  cleanupJSSource(MINIFIED_DIR + '/build/pdf.worker.js');
 
   var viewerFiles = [
     'web/compatibility.js',
