@@ -1,4 +1,3 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +12,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals Preferences, PDFJS, Promise */
 
 'use strict';
+
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define('pdfjs-web/firefoxcom', ['exports', 'pdfjs-web/preferences',
+      'pdfjs-web/pdfjs'], factory);
+  } else if (typeof exports !== 'undefined') {
+    factory(exports, require('./preferences.js'), require('./pdfjs.js'));
+  } else {
+    factory((root.pdfjsWebFirefoxCom = {}), root.pdfjsWebPreferences,
+      root.pdfjsWebPDFJS);
+  }
+}(this, function (exports, preferences, pdfjsLib) {
+//#if FIREFOX || MOZCENTRAL
+//#if !(FIREFOX || MOZCENTRAL)
+  if (true) { return; }  // TODO ensure nothing depends on this module.
+//#endif
+var Preferences = preferences.Preferences;
 
 var FirefoxCom = (function FirefoxComClosure() {
   return {
@@ -88,7 +103,7 @@ var DownloadManager = (function DownloadManagerClosure() {
 
     downloadData: function DownloadManager_downloadData(data, filename,
                                                         contentType) {
-      var blobUrl = PDFJS.createObjectURL(data, contentType);
+      var blobUrl = pdfjsLib.createObjectURL(data, contentType, false);
 
       FirefoxCom.request('download', {
         blobUrl: blobUrl,
@@ -133,3 +148,8 @@ Preferences._readFromStorage = function (prefObj) {
     });
   });
 };
+
+exports.DownloadManager = DownloadManager;
+exports.FirefoxCom = FirefoxCom;
+//#endif
+}));

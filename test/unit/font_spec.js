@@ -1,38 +1,58 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* globals expect, it, describe, CFFCompiler, CFFParser, CFFIndex, CFFStrings,
-           SEAC_ANALYSIS_ENABLED:true, Type1Parser, StringStream */
+           Type1Parser, StringStream, SEAC_ANALYSIS_ENABLED, Stream, beforeAll,
+           afterAll */
 
 'use strict';
 
 describe('font', function() {
-  // This example font comes from the CFF spec:
-  // http://www.adobe.com/content/dam/Adobe/en/devnet/font/pdfs/5176.CFF.pdf
-  var exampleFont = '0100040100010101134142434445462b' +
-                    '54696d65732d526f6d616e000101011f' +
-                    'f81b00f81c02f81d03f819041c6f000d' +
-                    'fb3cfb6efa7cfa1605e911b8f1120003' +
-                    '01010813183030312e30303754696d65' +
-                    '7320526f6d616e54696d657300000002' +
-                    '010102030e0e7d99f92a99fb7695f773' +
-                    '8b06f79a93fc7c8c077d99f85695f75e' +
-                    '9908fb6e8cf87393f7108b09a70adf0b' +
-                    'f78e14';
-  var fontData = [];
-  for (var i = 0; i < exampleFont.length; i += 2) {
-    var hex = exampleFont.substr(i, 2);
-    fontData.push(parseInt(hex, 16));
-  }
-  var bytes = new Uint8Array(fontData);
-  fontData = {
-    getBytes: function() {
-      return bytes;
+  function createWithNullProto(obj) {
+    var result = Object.create(null);
+    for (var i in obj) {
+      result[i] = obj[i];
     }
-  };
+    return result;
+  }
+
+  var fontData;
+
+  beforeAll(function (done) {
+    // This example font comes from the CFF spec:
+    // http://www.adobe.com/content/dam/Adobe/en/devnet/font/pdfs/5176.CFF.pdf
+    var exampleFont = '0100040100010101134142434445462b' +
+                      '54696d65732d526f6d616e000101011f' +
+                      'f81b00f81c02f81d03f819041c6f000d' +
+                      'fb3cfb6efa7cfa1605e911b8f1120003' +
+                      '01010813183030312e30303754696d65' +
+                      '7320526f6d616e54696d657300000002' +
+                      '010102030e0e7d99f92a99fb7695f773' +
+                      '8b06f79a93fc7c8c077d99f85695f75e' +
+                      '9908fb6e8cf87393f7108b09a70adf0b' +
+                      'f78e14';
+    var fontArr = [];
+    for (var i = 0, ii = exampleFont.length; i < ii; i += 2) {
+      var hex = exampleFont.substr(i, 2);
+      fontArr.push(parseInt(hex, 16));
+    }
+    fontData = new Stream(fontArr);
+    done();
+  });
+
+  afterAll(function () {
+    fontData = null;
+  });
 
   describe('CFFParser', function() {
-    var parser = new CFFParser(fontData, {});
-    var cff = parser.parse();
+    var parser, cff;
+
+    beforeAll(function (done) {
+      parser = new CFFParser(fontData, {}, SEAC_ANALYSIS_ENABLED);
+      cff = parser.parse();
+      done();
+    });
+
+    afterAll(function () {
+      parser = cff = null;
+    });
 
     it('parses header', function() {
       var header = cff.header;
@@ -102,51 +122,50 @@ describe('font', function() {
                                   14  // endchar
                                 ]);
       parser.bytes = bytes;
-      var charStrings = parser.parseCharStrings(0).charStrings;
+      var charStringsIndex = parser.parseIndex(0).obj;
+      var charStrings = parser.parseCharStrings(charStringsIndex).charStrings;
       expect(charStrings.count).toEqual(1);
       // shoudn't be sanitized
       expect(charStrings.get(0).length).toEqual(38);
     });
 
     it('parses a CharString endchar with 4 args w/seac enabled', function() {
-      var seacAnalysisState = SEAC_ANALYSIS_ENABLED;
-      try {
-        SEAC_ANALYSIS_ENABLED = true;
-        var bytes = new Uint8Array([0, 1, // count
-                                    1,  // offsetSize
-                                    0,  // offset[0]
-                                    237, 247, 22, 247, 72, 204, 247, 86, 14]);
-        parser.bytes = bytes;
-        var result = parser.parseCharStrings(0);
-        expect(result.charStrings.count).toEqual(1);
-        expect(result.charStrings.get(0).length).toEqual(1);
-        expect(result.seacs.length).toEqual(1);
-        expect(result.seacs[0].length).toEqual(4);
-        expect(result.seacs[0][0]).toEqual(130);
-        expect(result.seacs[0][1]).toEqual(180);
-        expect(result.seacs[0][2]).toEqual(65);
-        expect(result.seacs[0][3]).toEqual(194);
-      } finally {
-        SEAC_ANALYSIS_ENABLED = seacAnalysisState;
-      }
+      var parser = new CFFParser(fontData, {},
+                                 /* seacAnalysisEnabled = */ true);
+      var cff = parser.parse();
+
+      var bytes = new Uint8Array([0, 1, // count
+                                  1,  // offsetSize
+                                  0,  // offset[0]
+                                  237, 247, 22, 247, 72, 204, 247, 86, 14]);
+      parser.bytes = bytes;
+      var charStringsIndex = parser.parseIndex(0).obj;
+      var result = parser.parseCharStrings(charStringsIndex);
+      expect(result.charStrings.count).toEqual(1);
+      expect(result.charStrings.get(0).length).toEqual(1);
+      expect(result.seacs.length).toEqual(1);
+      expect(result.seacs[0].length).toEqual(4);
+      expect(result.seacs[0][0]).toEqual(130);
+      expect(result.seacs[0][1]).toEqual(180);
+      expect(result.seacs[0][2]).toEqual(65);
+      expect(result.seacs[0][3]).toEqual(194);
     });
 
     it('parses a CharString endchar with 4 args w/seac disabled', function() {
-      var seacAnalysisState = SEAC_ANALYSIS_ENABLED;
-      try {
-        SEAC_ANALYSIS_ENABLED = false;
-        var bytes = new Uint8Array([0, 1, // count
-                                    1,  // offsetSize
-                                    0,  // offset[0]
-                                    237, 247, 22, 247, 72, 204, 247, 86, 14]);
-        parser.bytes = bytes;
-        var result = parser.parseCharStrings(0);
-        expect(result.charStrings.count).toEqual(1);
-        expect(result.charStrings.get(0).length).toEqual(9);
-        expect(result.seacs.length).toEqual(0);
-      } finally {
-        SEAC_ANALYSIS_ENABLED = seacAnalysisState;
-      }
+      var parser = new CFFParser(fontData, {},
+                                 /* seacAnalysisEnabled = */ false);
+      var cff = parser.parse();
+
+      var bytes = new Uint8Array([0, 1, // count
+                                  1,  // offsetSize
+                                  0,  // offset[0]
+                                  237, 247, 22, 247, 72, 204, 247, 86, 14]);
+      parser.bytes = bytes;
+      var charStringsIndex = parser.parseIndex(0).obj;
+      var result = parser.parseCharStrings(charStringsIndex);
+      expect(result.charStrings.count).toEqual(1);
+      expect(result.charStrings.get(0).length).toEqual(9);
+      expect(result.seacs.length).toEqual(0);
     });
 
     it('parses a CharString endchar no args', function() {
@@ -155,7 +174,8 @@ describe('font', function() {
                                   0,  // offset[0]
                                   14]);
       parser.bytes = bytes;
-      var result = parser.parseCharStrings(0);
+      var charStringsIndex = parser.parseIndex(0).obj;
+      var result = parser.parseCharStrings(charStringsIndex);
       expect(result.charStrings.count).toEqual(1);
       expect(result.charStrings.get(0)[0]).toEqual(14);
       expect(result.seacs.length).toEqual(0);
@@ -223,7 +243,7 @@ describe('font', function() {
                                 ]);
       parser.bytes = bytes;
       var encoding = parser.parseEncoding(2, {}, new CFFStrings(), null);
-      expect(encoding.encoding).toEqual({0x8: 1});
+      expect(encoding.encoding).toEqual(createWithNullProto({0x8: 1}));
     });
 
     it('parses encoding format 1', function() {
@@ -236,7 +256,8 @@ describe('font', function() {
                                 ]);
       parser.bytes = bytes;
       var encoding = parser.parseEncoding(2, {}, new CFFStrings(), null);
-      expect(encoding.encoding).toEqual({0x7: 0x01, 0x08: 0x02});
+      expect(encoding.encoding).toEqual(
+        createWithNullProto({0x7: 0x01, 0x08: 0x02}));
     });
 
     it('parses fdselect format 0', function() {
@@ -290,7 +311,7 @@ describe('font', function() {
 
     it('splits tokens', function() {
       var stream = new StringStream('/BlueValues[-17 0]noaccess def');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       expect(parser.getToken()).toEqual('/');
       expect(parser.getToken()).toEqual('BlueValues');
       expect(parser.getToken()).toEqual('[');
@@ -303,35 +324,35 @@ describe('font', function() {
     });
     it('handles glued tokens', function() {
       var stream = new StringStream('dup/CharStrings');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       expect(parser.getToken()).toEqual('dup');
       expect(parser.getToken()).toEqual('/');
       expect(parser.getToken()).toEqual('CharStrings');
     });
     it('ignores whitespace', function() {
       var stream = new StringStream('\nab   c\t');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       expect(parser.getToken()).toEqual('ab');
       expect(parser.getToken()).toEqual('c');
     });
     it('parses numbers', function() {
       var stream = new StringStream('123');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       expect(parser.readNumber()).toEqual(123);
     });
     it('parses booleans', function() {
       var stream = new StringStream('true false');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       expect(parser.readBoolean()).toEqual(1);
       expect(parser.readBoolean()).toEqual(0);
     });
     it('parses number arrays', function() {
       var stream = new StringStream('[1 2]');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       expect(parser.readNumberArray()).toEqual([1, 2]);
       // Variation on spacing.
       stream = new StringStream('[ 1 2 ]');
-      parser = new Type1Parser(stream);
+      parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       expect(parser.readNumberArray()).toEqual([1, 2]);
     });
     it('skips comments', function() {
@@ -340,7 +361,7 @@ describe('font', function() {
         '%%Title: CMSY10\n' +
         '%Version: 003.002\n' +
         'FontDirectory');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       expect(parser.getToken()).toEqual('FontDirectory');
     });
     it('parses font program', function() {
@@ -352,7 +373,7 @@ describe('font', function() {
         '/CharStrings 46 dict dup begin\n' +
         '/.notdef 1 RD x ND' + '\n' +
         'end');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       var program = parser.extractFontProgram();
       expect(program.charstrings.length).toEqual(1);
       expect(program.properties.privateData.ExpansionFactor).toEqual(99);
@@ -360,7 +381,7 @@ describe('font', function() {
     it('parses font header font matrix', function() {
       var stream = new StringStream(
         '/FontMatrix [0.001 0 0 0.001 0 0 ]readonly def\n');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       var props = {};
       parser.extractFontHeader(props);
       expect(props.fontMatrix).toEqual([0.001, 0, 0, 0.001, 0, 0]);
@@ -371,7 +392,7 @@ describe('font', function() {
         '0 1 255 {1 index exch /.notdef put} for\n' +
         'dup 33 /arrowright put\n' +
         'readonly def\n');
-      var parser = new Type1Parser(stream);
+      var parser = new Type1Parser(stream, false, SEAC_ANALYSIS_ENABLED);
       var props = { overridableEncoding: true };
       parser.extractFontHeader(props);
       expect(props.builtInEncoding[33]).toEqual('arrowright');

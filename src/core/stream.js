@@ -1,5 +1,3 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +12,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals bytesToString, ColorSpace, Dict, EOF, error, info, isArray,
-           Jbig2Image, JpegImage, JpxImage, Lexer, PDFJS, shadow, Util, warn */
 
 'use strict';
+
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define('pdfjs/core/stream', ['exports', 'pdfjs/shared/util',
+      'pdfjs/core/primitives', 'pdfjs/core/jbig2', 'pdfjs/core/jpg',
+      'pdfjs/core/jpx'], factory);
+  } else if (typeof exports !== 'undefined') {
+    factory(exports, require('../shared/util.js'), require('./primitives.js'),
+      require('./jbig2.js'), require('./jpg.js'), require('./jpx.js'));
+  } else {
+    factory((root.pdfjsCoreStream = {}), root.pdfjsSharedUtil,
+      root.pdfjsCorePrimitives, root.pdfjsCoreJbig2, root.pdfjsCoreJpg,
+      root.pdfjsCoreJpx);
+  }
+}(this, function (exports, sharedUtil, corePrimitives, coreJbig2, coreJpg,
+                  coreJpx) {
+
+var Util = sharedUtil.Util;
+var error = sharedUtil.error;
+var info = sharedUtil.info;
+var isArray = sharedUtil.isArray;
+var createObjectURL = sharedUtil.createObjectURL;
+var shadow = sharedUtil.shadow;
+var warn = sharedUtil.warn;
+var Dict = corePrimitives.Dict;
+var isDict = corePrimitives.isDict;
+var Jbig2Image = coreJbig2.Jbig2Image;
+var JpegImage = coreJpg.JpegImage;
+var JpxImage = coreJpx.JpxImage;
 
 var Stream = (function StreamClosure() {
   function Stream(arrayBuffer, start, length, dict) {
@@ -656,6 +681,9 @@ var FlateStream = (function FlateStreamClosure() {
 
 var PredictorStream = (function PredictorStreamClosure() {
   function PredictorStream(str, maybeLength, params) {
+    if (!isDict(params)) {
+      return str; // no prediction
+    }
     var predictor = this.predictor = params.get('Predictor') || 1;
 
     if (predictor <= 1) {
@@ -932,26 +960,8 @@ var JpegStream = (function JpegStreamClosure() {
     return this.buffer;
   };
 
-  JpegStream.prototype.getIR = function JpegStream_getIR() {
-    return PDFJS.createObjectURL(this.bytes, 'image/jpeg');
-  };
-  /**
-   * Checks if the image can be decoded and displayed by the browser without any
-   * further processing such as color space conversions.
-   */
-  JpegStream.prototype.isNativelySupported =
-      function JpegStream_isNativelySupported(xref, res) {
-    var cs = ColorSpace.parse(this.dict.get('ColorSpace', 'CS'), xref, res);
-    return cs.name === 'DeviceGray' || cs.name === 'DeviceRGB';
-  };
-  /**
-   * Checks if the image can be decoded by the browser.
-   */
-  JpegStream.prototype.isNativelyDecodable =
-      function JpegStream_isNativelyDecodable(xref, res) {
-    var cs = ColorSpace.parse(this.dict.get('ColorSpace', 'CS'), xref, res);
-    var numComps = cs.numComps;
-    return numComps === 1 || numComps === 3;
+  JpegStream.prototype.getIR = function JpegStream_getIR(forceDataSchema) {
+    return createObjectURL(this.bytes, 'image/jpeg', forceDataSchema);
   };
 
   return JpegStream;
@@ -1136,6 +1146,11 @@ var DecryptStream = (function DecryptStreamClosure() {
 })();
 
 var Ascii85Stream = (function Ascii85StreamClosure() {
+  // Checks if ch is one of the following characters: SPACE, TAB, CR or LF.
+  function isSpace(ch) {
+    return (ch === 0x20 || ch === 0x09 || ch === 0x0D || ch === 0x0A);
+  }
+
   function Ascii85Stream(str, maybeLength) {
     this.str = str;
     this.dict = str.dict;
@@ -1159,7 +1174,7 @@ var Ascii85Stream = (function Ascii85StreamClosure() {
     var str = this.str;
 
     var c = str.getByte();
-    while (Lexer.isSpace(c)) {
+    while (isSpace(c)) {
       c = str.getByte();
     }
 
@@ -1183,7 +1198,7 @@ var Ascii85Stream = (function Ascii85StreamClosure() {
       input[0] = c;
       for (i = 1; i < 5; ++i) {
         c = str.getByte();
-        while (Lexer.isSpace(c)) {
+        while (isSpace(c)) {
           c = str.getByte();
         }
 
@@ -1330,6 +1345,7 @@ var RunLengthStream = (function RunLengthStreamClosure() {
 var CCITTFaxStream = (function CCITTFaxStreamClosure() {
 
   var ccittEOL = -2;
+  var ccittEOF = -1;
   var twoDimPass = 0;
   var twoDimHoriz = 1;
   var twoDimVert0 = 2;
@@ -2012,7 +2028,7 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
                 }
               }
               break;
-            case EOF:
+            case ccittEOF:
               this.addPixels(columns, 0);
               this.eof = true;
               break;
@@ -2053,7 +2069,7 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
       } else {
         code1 = this.lookBits(12);
         if (this.eoline) {
-          while (code1 !== EOF && code1 !== 1) {
+          while (code1 !== ccittEOF && code1 !== 1) {
             this.eatBits(1);
             code1 = this.lookBits(12);
           }
@@ -2066,7 +2082,7 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
         if (code1 === 1) {
           this.eatBits(12);
           gotEOL = true;
-        } else if (code1 === EOF) {
+        } else if (code1 === ccittEOF) {
           this.eof = true;
         }
       }
@@ -2102,7 +2118,7 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
       } else if (this.err && this.eoline) {
         while (true) {
           code1 = this.lookBits(13);
-          if (code1 === EOF) {
+          if (code1 === ccittEOF) {
             this.eof = true;
             return null;
           }
@@ -2182,7 +2198,7 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
     var limitValue = limit || 0;
     for (var i = start; i <= end; ++i) {
       var code = this.lookBits(i);
-      if (code === EOF) {
+      if (code === ccittEOF) {
         return [true, 1, false];
       }
       if (i < end) {
@@ -2218,7 +2234,7 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
       }
     }
     info('Bad two dim code');
-    return EOF;
+    return ccittEOF;
   };
 
   CCITTFaxStream.prototype.getWhiteCode =
@@ -2228,7 +2244,7 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
     var p;
     if (this.eoblock) {
       code = this.lookBits(12);
-      if (code === EOF) {
+      if (code === ccittEOF) {
         return 1;
       }
 
@@ -2264,7 +2280,7 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
     var code, p;
     if (this.eoblock) {
       code = this.lookBits(13);
-      if (code === EOF) {
+      if (code === ccittEOF) {
         return 1;
       }
       if ((code >> 7) === 0) {
@@ -2305,12 +2321,12 @@ var CCITTFaxStream = (function CCITTFaxStreamClosure() {
     while (this.inputBits < n) {
       if ((c = this.str.getByte()) === -1) {
         if (this.inputBits === 0) {
-          return EOF;
+          return ccittEOF;
         }
         return ((this.inputBuf << (n - this.inputBits)) &
                 (0xFFFF >> (16 - n)));
       }
-      this.inputBuf = (this.inputBuf << 8) + c;
+      this.inputBuf = (this.inputBuf << 8) | c;
       this.inputBits += 8;
     }
     return (this.inputBuf >> (this.inputBits - n)) & (0xFFFF >> (16 - n));
@@ -2465,3 +2481,21 @@ var NullStream = (function NullStreamClosure() {
 
   return NullStream;
 })();
+
+exports.Ascii85Stream = Ascii85Stream;
+exports.AsciiHexStream = AsciiHexStream;
+exports.CCITTFaxStream = CCITTFaxStream;
+exports.DecryptStream = DecryptStream;
+exports.DecodeStream = DecodeStream;
+exports.FlateStream = FlateStream;
+exports.Jbig2Stream = Jbig2Stream;
+exports.JpegStream = JpegStream;
+exports.JpxStream = JpxStream;
+exports.NullStream = NullStream;
+exports.PredictorStream = PredictorStream;
+exports.RunLengthStream = RunLengthStream;
+exports.Stream = Stream;
+exports.StreamsSequenceStream = StreamsSequenceStream;
+exports.StringStream = StringStream;
+exports.LZWStream = LZWStream;
+}));

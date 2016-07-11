@@ -1,5 +1,3 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright 2013 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,18 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals DEFAULT_PREFERENCES, Promise */
+/* globals DEFAULT_PREFERENCES, chrome */
 
 'use strict';
 
-//#include default_preferences.js
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define('pdfjs-web/preferences', ['exports'], factory);
+  } else if (typeof exports !== 'undefined') {
+    factory(exports);
+  } else {
+    factory((root.pdfjsWebPreferences = {}));
+  }
+}(this, function (exports) {
 
-var SidebarView = {
-  NONE: 0,
-  THUMBS: 1,
-  OUTLINE: 2,
-  ATTACHMENTS: 3
-};
+//#include $ROOT/web/default_preferences.js
 
 /**
  * Preferences - Utility for storing persistent settings.
@@ -160,24 +161,6 @@ var Preferences = {
   }
 };
 
-//#if B2G
-//Preferences._writeToStorage = function (prefObj) {
-//  return new Promise(function (resolve) {
-//    asyncStorage.setItem('pdfjs.preferences', JSON.stringify(prefObj),
-//                         resolve);
-//  });
-//};
-//
-//Preferences._readFromStorage = function (prefObj) {
-//  return new Promise(function (resolve) {
-//    asyncStorage.getItem('pdfjs.preferences', function (prefStr) {
-//      var readPrefs = JSON.parse(prefStr);
-//      resolve(readPrefs);
-//    });
-//  });
-//};
-//#endif
-
 //#if CHROME
 //Preferences._writeToStorage = function (prefObj) {
 //  return new Promise(function (resolve) {
@@ -221,7 +204,7 @@ var Preferences = {
 //};
 //#endif
 
-//#if !(FIREFOX || MOZCENTRAL || B2G || CHROME)
+//#if !(FIREFOX || MOZCENTRAL || CHROME)
 Preferences._writeToStorage = function (prefObj) {
   return new Promise(function (resolve) {
     localStorage.setItem('pdfjs.preferences', JSON.stringify(prefObj));
@@ -236,3 +219,6 @@ Preferences._readFromStorage = function (prefObj) {
   });
 };
 //#endif
+
+exports.Preferences = Preferences;
+}));

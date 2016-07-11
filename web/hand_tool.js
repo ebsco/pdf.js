@@ -1,5 +1,3 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright 2013 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,35 +12,72 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals mozL10n, GrabToPan, Preferences, SecondaryToolbar */
 
 'use strict';
 
-//#include grab_to_pan.js
-var HandTool = {
-  initialize: function handToolInitialize(options) {
-    var toggleHandTool = options.toggleHandTool;
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define('pdfjs-web/hand_tool', ['exports', 'pdfjs-web/ui_utils',
+      'pdfjs-web/grab_to_pan', 'pdfjs-web/preferences',
+      'pdfjs-web/secondary_toolbar'], factory);
+  } else if (typeof exports !== 'undefined') {
+    factory(exports, require('./ui_utils.js'), require('./grab_to_pan.js'),
+      require('./preferences.js'), require('./secondary_toolbar.js'));
+  } else {
+    factory((root.pdfjsWebHandTool = {}), root.pdfjsWebUIUtils,
+      root.pdfjsWebGrabToPan, root.pdfjsWebPreferences,
+      root.pdfjsWebSecondaryToolbar);
+  }
+}(this, function (exports, uiUtils, grabToPan, preferences, secondaryToolbar) {
+
+var mozL10n = uiUtils.mozL10n;
+var GrabToPan = grabToPan.GrabToPan;
+var Preferences = preferences.Preferences;
+var SecondaryToolbar = secondaryToolbar.SecondaryToolbar;
+
+/**
+ * @typedef {Object} HandToolOptions
+ * @property {HTMLDivElement} container - The document container.
+ * @property {HTMLButtonElement} toggleHandTool - The button element for
+ *                                                toggling the hand tool.
+ */
+
+/**
+ * @class
+ */
+var HandTool = (function HandToolClosure() {
+  /**
+   * @constructs HandTool
+   * @param {HandToolOptions} options
+   */
+  function HandTool(options) {
+    this.container = options.container;
+    this.toggleHandTool = options.toggleHandTool;
+
+    this.wasActive = false;
+
     this.handTool = new GrabToPan({
-      element: options.container,
+      element: this.container,
       onActiveChanged: function(isActive) {
-        if (!toggleHandTool) {
+        if (!this.toggleHandTool) {
           return;
         }
         if (isActive) {
-          toggleHandTool.title =
+          this.toggleHandTool.title =
             mozL10n.get('hand_tool_disable.title', null, 'Disable hand tool');
-          toggleHandTool.firstElementChild.textContent =
+          this.toggleHandTool.firstElementChild.textContent =
             mozL10n.get('hand_tool_disable_label', null, 'Disable hand tool');
         } else {
-          toggleHandTool.title =
+          this.toggleHandTool.title =
             mozL10n.get('hand_tool_enable.title', null, 'Enable hand tool');
-          toggleHandTool.firstElementChild.textContent =
+          this.toggleHandTool.firstElementChild.textContent =
             mozL10n.get('hand_tool_enable_label', null, 'Enable hand tool');
         }
-      }
+      }.bind(this)
     });
-    if (toggleHandTool) {
-      toggleHandTool.addEventListener('click', this.toggle.bind(this), false);
+
+    if (this.toggleHandTool) {
+      this.toggleHandTool.addEventListener('click', this.toggle.bind(this));
 
       window.addEventListener('localized', function (evt) {
         Preferences.get('enableHandToolOnLoad').then(function resolved(value) {
@@ -63,24 +98,38 @@ var HandTool = {
         }
       }.bind(this));
     }
-  },
-
-  toggle: function handToolToggle() {
-    this.handTool.toggle();
-    SecondaryToolbar.close();
-  },
-
-  enterPresentationMode: function handToolEnterPresentationMode() {
-    if (this.handTool.active) {
-      this.wasActive = true;
-      this.handTool.deactivate();
-    }
-  },
-
-  exitPresentationMode: function handToolExitPresentationMode() {
-    if (this.wasActive) {
-      this.wasActive = null;
-      this.handTool.activate();
-    }
   }
-};
+
+  HandTool.prototype = {
+    /**
+     * @return {boolean}
+     */
+    get isActive() {
+      return !!this.handTool.active;
+    },
+
+    toggle: function HandTool_toggle() {
+      this.handTool.toggle();
+      SecondaryToolbar.close();
+    },
+
+    enterPresentationMode: function HandTool_enterPresentationMode() {
+      if (this.isActive) {
+        this.wasActive = true;
+        this.handTool.deactivate();
+      }
+    },
+
+    exitPresentationMode: function HandTool_exitPresentationMode() {
+      if (this.wasActive) {
+        this.wasActive = false;
+        this.handTool.activate();
+      }
+    }
+  };
+
+  return HandTool;
+})();
+
+exports.HandTool = HandTool;
+}));

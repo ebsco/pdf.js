@@ -1,5 +1,3 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals PDFViewerApplication, SCROLLBAR_PADDING */
 
 'use strict';
+
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define('pdfjs-web/secondary_toolbar', ['exports', 'pdfjs-web/ui_utils'],
+      factory);
+  } else if (typeof exports !== 'undefined') {
+    factory(exports, require('./ui_utils.js'));
+  } else {
+    factory((root.pdfjsWebSecondaryToolbar = {}), root.pdfjsWebUIUtils);
+  }
+}(this, function (exports, uiUtils) {
+
+var SCROLLBAR_PADDING = uiUtils.SCROLLBAR_PADDING;
+
+var app; // Avoiding circular reference, see _setApp function below.
+var PDFViewerApplication = null; // = app.PDFViewerApplication;
 
 var SecondaryToolbar = {
   opened: false,
@@ -75,7 +88,8 @@ var SecondaryToolbar = {
   },
 
   openFileClick: function secondaryToolbarOpenFileClick(evt) {
-    document.getElementById('fileInput').click();
+    var openFileInputName = PDFViewerApplication.appConfig.openFileInputName;
+    document.getElementById(openFileInputName).click();
     this.close();
   },
 
@@ -160,3 +174,12 @@ var SecondaryToolbar = {
     }
   }
 };
+
+function _setApp(app_) {
+  app = app_;
+  PDFViewerApplication = app.PDFViewerApplication;
+}
+
+exports.SecondaryToolbar = SecondaryToolbar;
+exports._setApp = _setApp;
+}));
