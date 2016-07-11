@@ -502,6 +502,12 @@ target.cmaps = function () {
 
 function bundle(filename, outfilename, initFiles, amdName, defines,
                 isMainFile) {
+
+  var out = '',
+    lineFilter = function (line) {
+    out += line.replace(/['"]use strict['"];/g, "") + '\n';
+  };
+
   // Reading UMD headers and building loading orders of modules. The
   // readDependencies returns AMD module names: removing 'pdfjs' prefix and
   // adding '.js' extensions to the name.
@@ -529,7 +535,7 @@ function bundle(filename, outfilename, initFiles, amdName, defines,
 
   // This just preprocesses the empty pdf.js file, we don't actually want to
   // preprocess everything yet since other build targets use this file.
-  builder.preprocess(filename, outfilename,
+  builder.preprocess(filename, lineFilter,
     builder.merge(defines, {
       BUNDLE: bundleContent,
       BUNDLE_VERSION: bundleVersion,
@@ -538,6 +544,8 @@ function bundle(filename, outfilename, initFiles, amdName, defines,
       BUNDLE_JS_NAME: jsName,
       MAIN_FILE: isMainFile
     }));
+
+  fs.writeFileSync(outfilename, out);
 }
 
 //
@@ -639,6 +647,11 @@ target.singlefile = function() {
 
 };
 
+function stripUseStrict(content) {
+  var reg = new RegExp('[\'"]use strict[\'"];', 'g');
+  return content.replace(reg, '');
+}
+
 function stripCommentHeaders(content) {
   var notEndOfComment = '(?:[^*]|\\*(?!/))+';
   var reg = new RegExp(
@@ -661,6 +674,7 @@ function cleanupJSSource(file) {
   var content = cat(file);
 
   content = stripCommentHeaders(content);
+  content = stripUseStrict(content);
 
   content.to(file);
 }
@@ -724,6 +738,10 @@ target.minified = function() {
   builder.build(setup);
 
   cleanupCSSSource(MINIFIED_DIR + '/web/viewer.css');
+  cleanupJSSource(MINIFIED_DIR + '/build/pdf.js');
+  cleanupJSSource(MINIFIED_DIR + '/build/pdf.worker.js');
+  cleanupJSSource(MINIFIED_DIR + '/web/viewer.js');
+  cleanupJSSource(BUILD_DIR + 'dist/web/compatibility.js');
   rm(TMP_VIEWER);
 
   var viewerFiles = [
